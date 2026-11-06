@@ -1,0 +1,14 @@
+{
+  "name": "apex-agent-platform",
+  "version": "2.0.0",
+  "description": "Autonomous Agentic Commerce Platform with AP2, x402, and agy CLI Intelligence",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "ethers": "^6.13.5",
+    "express": "^4.21.2"
+  }
+}

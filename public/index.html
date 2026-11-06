@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ApexLoop OS | Autonomous Agent Loop & Payment Engine</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+    
+    :root {
+      --bg-base: #06090e;
+      --bg-surface: #0a0e17;
+      --bg-card: #101623;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-base);
+      color: #f1f5f9;
+    }
+
+    .mono { font-family: 'JetBrains+Mono', monospace; }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg-surface); }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+    /* Flowing pipeline loader */
+    @keyframes flowPipeline {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .flow-active {
+      background: linear-gradient(90deg, #4f46e5, #06b6d4, #10b981, #ec4899, #4f46e5);
+      background-size: 300% 300%;
+      animation: flowPipeline 2.5s ease infinite;
+    }
+
+    /* Pulse animation */
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.92); }
+    }
+    .pulse-glow { animation: pulseGlow 1.8s infinite; }
+
+    /* Light Theme Styling */
+    body.light-theme {
+      background-color: #f8fafc !important;
+      color: #0f172a !important;
+    }
+    body.light-theme aside {
+      background-color: #ffffff !important;
+      border-color: #e2e8f0 !important;
+    }
+    body.light-theme header {
+      background-color: rgba(255, 255, 255, 0.95) !important;
+      border-color: #e2e8f0 !important;
+    }
+    body.light-theme .bg-\[\#06090e\],
+    body.light-theme .bg-\[\#080c14\] {
+      background-color: #f8fafc !important;
+    }
+    body.light-theme .bg-slate-900\/60,
+    body.light-theme .bg-slate-900\/80,
+    body.light-theme .bg-slate-900,
+    body.light-theme .bg-slate-950,
+    body.light-theme .bg-slate-950\/40,
+    body.light-theme .bg-slate-950\/60,
+    body.light-theme .bg-slate-950\/70,
+    body.light-theme .bg-slate-950\/80 {
+      background-color: #ffffff !important;
+      border-color: #e2e8f0 !important;
+      box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+    }
+    body.light-theme .text-white {
+      color: #0f172a !important;
+    }
+    body.light-theme .text-slate-100 {
+      color: #0f172a !important;
+    }
+    body.light-theme .text-slate-200 {
+      color: #1e293b !important;
+    }
+    body.light-theme .text-slate-300 {
+      color: #334155 !important;
+    }
+    body.light-theme .text-slate-400 {
+      color: #475569 !important;
+    }
+    body.light-theme .text-slate-500 {
+      color: #64748b !important;
+    }
+    body.light-theme .border-slate-800,
+    body.light-theme .border-slate-800\/60,
+    body.light-theme .border-slate-800\/80 {
+      border-color: #e2e8f0 !important;
+    }
+    body.light-theme #consoleLogStream {
+      background-color: #f8fafc !important;
+      border-color: #e2e8f0 !important;
+    }
+    body.light-theme #vaultJsonView {
+      background-color: #f1f5f9 !important;
+      color: #1e293b !important;
+      border-color: #e2e8f0 !important;
+    }
+    body.light-theme input#loopGoalInput {
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+      border-color: #cbd5e1 !important;
+    }
+  </style>
+</head>
+<body class="h-screen flex overflow-hidden selection:bg-indigo-500 selection:text-white">
+
+  <!-- ========================================================= -->
+  <!-- LEFT SIDEBAR: Navigation & Live Loops Monitor             -->
+  <!-- ========================================================= -->
+  <aside class="w-64 bg-[#080c14] border-r border-slate-800/80 flex flex-col justify-between shrink-0 select-none z-30">
+    <div>
+      <!-- Brand & Version -->
+      <div class="px-5 py-4 border-b border-slate-800/80 flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-teal-400 flex items-center justify-center shadow-lg shadow-indigo-600/30">
+            <i class="fa-solid fa-arrows-spin text-white text-base"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-1.5">
+              <span class="font-bold text-sm text-white tracking-tight">ApexLoop OS</span>
+              <span class="text-[9px] px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-300 border border-teal-500/30 font-semibold mono">v3.0</span>
+            </div>
+            <p class="text-[10px] text-slate-500 font-medium">Autonomous Loop Runtime</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="p-3 space-y-1">
+        <button onclick="navigateTab('studio')" id="tab-studio" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition bg-indigo-600 text-white shadow-sm shadow-indigo-600/30">
+          <span class="flex items-center space-x-2.5">
+            <i class="fa-solid fa-terminal text-sm w-4"></i>
+            <span>Loop Studio</span>
+          </span>
+          <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-glow"></span>
+        </button>
+
+        <button onclick="navigateTab('standing')" id="tab-standing" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-100 hover:bg-slate-900 transition">
+          <span class="flex items-center space-x-2.5">
+            <i class="fa-solid fa-clock-rotate-left text-sm w-4"></i>
+            <span>Standing Loops</span>
+          </span>
+          <span class="mono text-[10px] bg-slate-800 text-indigo-400 px-1.5 py-0.5 rounded" id="standingCountBadge">1 Active</span>
+        </button>
+
+        <button onclick="navigateTab('scanner')" id="tab-scanner" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-100 hover:bg-slate-900 transition">
+          <span class="flex items-center space-x-2.5">
+            <i class="fa-solid fa-globe text-sm w-4"></i>
+            <span>Live Web Recon</span>
+          </span>
+          <span class="text-[10px] mono text-emerald-400">REAL</span>
+        </button>
+
+        <button onclick="navigateTab('ledger')" id="tab-ledger" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-100 hover:bg-slate-900 transition">
+          <span class="flex items-center space-x-2.5">
+            <i class="fa-solid fa-receipt text-sm w-4"></i>
+            <span>Transaction Ledger</span>
+          </span>
+          <span class="mono text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded" id="ledgerCountBadge">1</span>
+        </button>
+
+        <button onclick="navigateTab('vault')" id="tab-vault" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-100 hover:bg-slate-900 transition">
+          <span class="flex items-center space-x-2.5">
+            <i class="fa-solid fa-shield-halved text-sm w-4"></i>
+            <span>AP2 Mandate Vault</span>
+          </span>
+          <span class="text-[10px] text-emerald-400 font-semibold" id="sidebarCapBadge">₹5,000</span>
+        </button>
+
+        <button onclick="navigateTab('console')" id="tab-console" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-100 hover:bg-slate-900 transition">
+          <span class="flex items-center space-x-2.5">
+            <i class="fa-solid fa-code text-sm w-4"></i>
+            <span>Protocol Console</span>
+          </span>
+          <span class="text-[10px] mono text-slate-500">LOGS</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Bottom Sidebar: Live Market Ticker & Wallet -->
+    <div class="p-3 border-t border-slate-800/80 space-y-3">
+      <!-- Live Crypto Price Meter -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 space-y-1.5">
+        <div class="flex items-center justify-between text-[11px]">
+          <span class="text-slate-400 flex items-center gap-1">
+            <i class="fa-brands fa-ethereum text-indigo-400"></i> Live ETH Price:
+          </span>
+          <span class="mono text-emerald-400 font-bold" id="tickerEthInr">₹210,250</span>
+        </div>
+        <div class="flex items-center justify-between text-[10px] text-slate-500 mono">
+          <span id="tickerEthUsd">$2,225.00</span>
+          <span>Base Gas: 0.04 gwei</span>
+        </div>
+      </div>
+
+      <!-- Autonomous Agent Signer Pill -->
+      <div onclick="openWalletModal()" class="bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-indigo-500/50 rounded-xl p-2.5 flex items-center justify-between text-xs cursor-pointer transition">
+        <div class="flex items-center space-x-2 overflow-hidden">
+          <div class="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-xs shrink-0">
+            <i class="fa-solid fa-key"></i>
+          </div>
+          <div class="truncate">
+            <div class="flex items-center space-x-1">
+              <p class="text-[10px] text-slate-500 leading-none">Agent Signer</p>
+              <span id="sidebarFundedBadge" class="text-[9px] text-amber-400 font-mono">(Unfunded)</span>
+            </div>
+            <p class="mono text-[11px] text-slate-200 font-medium truncate" id="sidebarWalletText">0x6436...2Bf4</p>
+          </div>
+        </div>
+        <button onclick="event.stopPropagation(); copyWalletAddress()" title="Copy Agent Address" class="text-slate-400 hover:text-slate-200 p-1.5 rounded hover:bg-slate-800 transition">
+          <i class="fa-regular fa-copy text-xs"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ========================================================= -->
+  <!-- MAIN WORKSPACE                                            -->
+  <!-- ========================================================= -->
+  <div class="flex-1 flex flex-col overflow-hidden bg-[#06090e]">
+
+    <!-- App Top Bar -->
+    <header class="h-14 border-b border-slate-800/80 bg-slate-950/70 backdrop-blur px-6 flex items-center justify-between shrink-0 z-20">
+      <div class="flex items-center space-x-3">
+        <h2 class="text-sm font-bold text-white tracking-tight" id="topHeaderTitle">Autonomous Loop Studio</h2>
+        <span class="text-slate-600">/</span>
+        <span class="text-xs text-slate-400" id="topHeaderSubtitle">Multi-Step Plan-Search-Settle Pipeline</span>
+      </div>
+
+      <div class="flex items-center space-x-3 text-xs">
+        <!-- Live Loop Indicator -->
+        <div id="liveLoopIndicator" class="px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-[11px] text-slate-300 font-medium flex items-center space-x-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-glow"></span>
+          <span id="loopStatusText">Loop Daemon Idle</span>
+        </div>
+
+        <!-- Agent Wallet Pill -->
+        <button onclick="openWalletModal()" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[11px] text-slate-300 font-semibold flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-wallet text-indigo-400"></i>
+          <span id="topWalletBalance">0.0000 ETH</span>
+        </button>
+
+        <!-- Theme Selector (Light / Dark) -->
+        <button onclick="toggleTheme()" id="themeToggleBtn" title="Switch between Light and Dark mode" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[11px] text-slate-300 font-semibold flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-sun text-amber-400"></i>
+          <span id="themeToggleLabel">Light Theme</span>
+        </button>
+
+        <!-- Settlement Rail Selector -->
+        <div class="bg-slate-900 border border-slate-800 rounded-lg p-0.5 flex items-center text-[11px]">
+          <button id="railSim" onclick="setSettlementRail('simulated')" class="px-2.5 py-1 rounded-md bg-indigo-600 text-white font-semibold transition">
+            Simulated EVM
+          </button>
+          <button id="railBase" onclick="setSettlementRail('testnet_base')" class="px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 font-semibold transition">
+            Base Sepolia
+          </button>
+        </div>
+
+        <!-- Emergency Killswitch -->
+        <button onclick="toggleEmergencyHalt()" id="killswitchBtn" class="px-3 py-1.5 rounded-lg border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 transition flex items-center space-x-1.5 font-bold text-xs">
+          <i class="fa-solid fa-power-off text-xs"></i>
+          <span id="killswitchLabel">Killswitch: OFF</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Living Flowing Pipeline Line -->
+    <div id="flowingPipeline" class="h-1 w-full bg-slate-900 relative overflow-hidden hidden">
+      <div class="h-full w-full flow-active"></div>
+    </div>
+
+    <!-- Multi-Tab Viewport -->
+    <div class="flex-1 overflow-hidden relative">
+
+      <!-- ===================================================== -->
+      <!-- TAB 1: AUTONOMOUS LOOP STUDIO                         -->
+      <!-- ===================================================== -->
+      <section id="section-studio" class="h-full flex flex-col overflow-hidden">
+        
+        <!-- Interactive 6-Stage Loop Graph -->
+        <div class="border-b border-slate-800/60 bg-slate-950/40 px-6 py-2.5 flex items-center justify-between text-xs shrink-0">
+          <div class="flex items-center space-x-3 text-[11px]">
+            <div id="node-plan" class="flex items-center space-x-1 text-slate-500 font-medium">
+              <span class="w-4 h-4 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-[10px] mono">1</span>
+              <span>Decompose Goal</span>
+            </div>
+            <span class="text-slate-700">→</span>
+            <div id="node-search" class="flex items-center space-x-1 text-slate-500 font-medium">
+              <span class="w-4 h-4 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-[10px] mono">2</span>
+              <span>Live Web Recon</span>
+            </div>
+            <span class="text-slate-700">→</span>
+            <div id="node-norm" class="flex items-center space-x-1 text-slate-500 font-medium">
+              <span class="w-4 h-4 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-[10px] mono">3</span>
+              <span>Market Pricing</span>
+            </div>
+            <span class="text-slate-700">→</span>
+            <div id="node-policy" class="flex items-center space-x-1 text-slate-500 font-medium">
+              <span class="w-4 h-4 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-[10px] mono">4</span>
+              <span>AP2 Guardrail</span>
+            </div>
+            <span class="text-slate-700">→</span>
+            <div id="node-x402" class="flex items-center space-x-1 text-slate-500 font-medium">
+              <span class="w-4 h-4 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-[10px] mono">5</span>
+              <span>x402 Challenge</span>
+            </div>
+            <span class="text-slate-700">→</span>
+            <div id="node-settle" class="flex items-center space-x-1 text-slate-500 font-medium">
+              <span class="w-4 h-4 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-[10px] mono">6</span>
+              <span>EVM Settle</span>
+            </div>
+          </div>
+          <span class="text-[11px] mono text-slate-500" id="loopPhaseLabel">Ready</span>
+        </div>
+
+        <!-- Scrollable Studio Stream -->
+        <div id="studioStream" class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+          
+          <!-- Launchpad Objective Cards -->
+          <div id="studioLaunchpad" class="space-y-4">
+            <div class="bg-gradient-to-r from-slate-900/80 via-slate-900/40 to-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl">
+              <div class="flex items-start justify-between">
+                <div class="space-y-1.5 max-w-xl">
+                  <span class="text-[10px] uppercase font-bold tracking-widest text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-full border border-indigo-500/20">
+                    Loop Architecture v3.0
+                  </span>
+                  <h3 class="text-xl font-bold text-white tracking-tight">Autonomous Agent Loop Execution</h3>
+                  <p class="text-xs text-slate-400 leading-relaxed">
+                    This agent doesn't just read static mock files. It executes <strong>real live web reconnaissance</strong> (DuckDuckGo engine), extracts live product pricing, normalizes against <strong>real-time CoinGecko ETH exchange rates</strong>, checks Google AP2 Intent Mandates, and settles via x402.
+                  </p>
+                </div>
+                <div class="w-12 h-12 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-xl shrink-0">
+                  <i class="fa-solid fa-arrows-spin"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- Objective Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              
+              <!-- Card 1 -->
+              <div class="bg-slate-900/60 border border-slate-800 hover:border-indigo-500/50 rounded-2xl p-4 transition flex flex-col justify-between space-y-3 group shadow-md">
+                <div class="space-y-2">
+                  <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-base">
+                    <i class="fa-solid fa-shoe-prints"></i>
+                  </div>
+                  <h4 class="font-bold text-sm text-white group-hover:text-indigo-300 transition">Smart Footwear Search</h4>
+                  <p class="text-[11px] text-slate-400 leading-relaxed">
+                    Queries live web for top running shoes, parses reviews and prices, filters under ₹5,000 AP2 cap.
+                  </p>
+                </div>
+                <button 
+                  onclick="triggerLoopExecution('Buy best running shoe under 5k')"
+                  class="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white text-xs font-semibold transition flex items-center justify-center space-x-2"
+                >
+                  <span>Execute Loop</span>
+                  <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                </button>
+              </div>
+
+              <!-- Card 2 -->
+              <div class="bg-slate-900/60 border border-slate-800 hover:border-purple-500/50 rounded-2xl p-4 transition flex flex-col justify-between space-y-3 group shadow-md">
+                <div class="space-y-2">
+                  <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 text-base">
+                    <i class="fa-solid fa-film"></i>
+                  </div>
+                  <h4 class="font-bold text-sm text-white group-hover:text-purple-300 transition">IMAX Movie Booking</h4>
+                  <p class="text-[11px] text-slate-400 leading-relaxed">
+                    Auto-reserve 2 prime IMAX Laser seats for Dune 3 premiere. Auto-approved under ₹1,000 threshold.
+                  </p>
+                </div>
+                <button 
+                  onclick="triggerLoopExecution('Book 2 IMAX tickets for Dune 3 on premiere')"
+                  class="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-purple-600 text-slate-200 hover:text-white text-xs font-semibold transition flex items-center justify-center space-x-2"
+                >
+                  <span>Execute Loop</span>
+                  <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                </button>
+              </div>
+
+              <!-- Card 3 -->
+              <div class="bg-slate-900/60 border border-slate-800 hover:border-emerald-500/50 rounded-2xl p-4 transition flex flex-col justify-between space-y-3 group shadow-md">
+                <div class="space-y-2">
+                  <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-base">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                  </div>
+                  <h4 class="font-bold text-sm text-white group-hover:text-emerald-300 transition">Micro-DCA & Crons</h4>
+                  <p class="text-[11px] text-slate-400 leading-relaxed">
+                    Trigger automated 0.0001 ETH liquidity rebalancing when Base gas fees drop below 0.08 gwei.
+                  </p>
+                </div>
+                <button 
+                  onclick="triggerLoopExecution('Schedule daily 0.001 ETH micro-DCA into Aave')"
+                  class="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-emerald-600 text-slate-200 hover:text-white text-xs font-semibold transition flex items-center justify-center space-x-2"
+                >
+                  <span>Execute Loop</span>
+                  <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Dynamic Output Stream -->
+          <div id="dynamicStudioResults" class="space-y-6"></div>
+
+        </div>
+
+        <!-- Input Dispatch Bar -->
+        <div class="p-4 border-t border-slate-800/80 bg-slate-950/80 shrink-0">
+          <form onsubmit="handleLoopFormSubmit(event)" class="relative flex items-center">
+            <input 
+              type="text" 
+              id="loopGoalInput" 
+              placeholder="Give any autonomous goal (e.g. 'Buy best shoe under 5k', 'Book Dune 3 tickets')..." 
+              class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3.5 pr-28 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition shadow-inner"
+            />
+            <button 
+              type="submit" 
+              class="absolute right-2.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md shadow-indigo-600/30"
+            >
+              <span>Dispatch Loop</span>
+              <i class="fa-solid fa-play text-xs"></i>
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- ===================================================== -->
+      <!-- TAB 2: STANDING LOOPS / CRONS CONTROL ROOM           -->
+      <!-- ===================================================== -->
+      <section id="section-standing" class="h-full flex flex-col p-6 space-y-6 overflow-y-auto custom-scrollbar hidden">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-bold text-white tracking-tight">Standing Autonomous Loops & Crons</h3>
+            <p class="text-xs text-slate-400">Background tasks that monitor web feeds, gas prices, or ticket windows and trigger x402 settlement.</p>
+          </div>
+          <button onclick="promptNewLoopModal()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-plus"></i> Add Standing Loop
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="standingLoopsGrid">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+
+      <!-- ===================================================== -->
+      <!-- TAB 3: LIVE WEB & RECONNAISSANCE SCANNER             -->
+      <!-- ===================================================== -->
+      <section id="section-scanner" class="h-full flex flex-col p-6 space-y-6 overflow-y-auto custom-scrollbar hidden">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-bold text-white tracking-tight">Live Web & Market Reconnaissance</h3>
+            <p class="text-xs text-slate-400">Real-time external data fetched by the agent: DuckDuckGo web results & CoinGecko rates.</p>
+          </div>
+          <span class="mono text-xs px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+            Live Web Active
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 space-y-1">
+            <p class="text-[11px] text-slate-400">Live ETH Exchange Rate (INR)</p>
+            <p class="text-xl font-bold text-emerald-400 mono" id="reconEthInr">₹210,250</p>
+          </div>
+          <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 space-y-1">
+            <p class="text-[11px] text-slate-400">Live ETH Price (USD)</p>
+            <p class="text-xl font-bold text-white mono" id="reconEthUsd">$2,225.00</p>
+          </div>
+          <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 space-y-1">
+            <p class="text-[11px] text-slate-400">Base Sepolia L2 Gas</p>
+            <p class="text-xl font-bold text-cyan-400 mono">0.04 Gwei</p>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 space-y-3">
+          <h4 class="font-bold text-sm text-white">Recent Real Web Reconnaissance Sources</h4>
+          <div class="space-y-2.5" id="reconWebHitsList">
+            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-400">
+              Launch a goal in the Loop Studio to see real-time web hits stream here.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================== -->
+      <!-- TAB 4: TRANSACTION LEDGER                            -->
+      <!-- ===================================================== -->
+      <section id="section-ledger" class="h-full flex flex-col p-6 space-y-5 overflow-y-auto custom-scrollbar hidden">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 space-y-1">
+            <p class="text-[11px] text-slate-400">Total Volume Settled</p>
+            <p class="text-xl font-bold text-white mono" id="ledgerVolumeText">₹500</p>
+          </div>
+          <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 space-y-1">
+            <p class="text-[11px] text-slate-400">Confirmed Orders</p>
+            <p class="text-xl font-bold text-emerald-400 mono" id="ledgerOrdersText">1</p>
+          </div>
+          <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 space-y-1">
+            <p class="text-[11px] text-slate-400">Avg Settlement Speed</p>
+            <p class="text-xl font-bold text-cyan-400 mono">780 ms</p>
+          </div>
+          <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 space-y-1">
+            <p class="text-[11px] text-slate-400">Autonomous Signer</p>
+            <p class="text-xs font-semibold text-indigo-300 mono truncate">0x21C0...6d75</p>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+          <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
+            <h4 class="font-bold text-sm text-white">Cryptographic Transaction Ledger</h4>
+            <span class="text-[11px] text-slate-500 mono">EVM Non-Repudiable Log</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-950/60 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+                <tr>
+                  <th class="py-3 px-4">Timestamp</th>
+                  <th class="py-3 px-4">Order ID</th>
+                  <th class="py-3 px-4">Item & Domain</th>
+                  <th class="py-3 px-4">Amount</th>
+                  <th class="py-3 px-4">Rail</th>
+                  <th class="py-3 px-4">Tx Hash Proof</th>
+                  <th class="py-3 px-4">Status</th>
+                </tr>
+              </thead>
+              <tbody id="ledgerRowsContainer" class="divide-y divide-slate-800/60 text-slate-300">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================== -->
+      <!-- TAB 5: AP2 MANDATE VAULT                             -->
+      <!-- ===================================================== -->
+      <section id="section-vault" class="h-full flex flex-col p-6 space-y-6 overflow-y-auto custom-scrollbar hidden">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-bold text-white tracking-tight">AP2 Mandate Vault & Security Controls</h3>
+            <p class="text-xs text-slate-400">Living policy parameters granted to your autonomous payment agent.</p>
+          </div>
+          <span class="mono text-[11px] px-2.5 py-1 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+            W3C Verifiable Credential · EIP-712
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 space-y-5">
+            <h4 class="font-bold text-sm text-white flex items-center gap-2">
+              <i class="fa-solid fa-gauge text-indigo-400"></i> Spending Velocity & Limits
+            </h4>
+
+            <div class="space-y-2">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">Single Transaction Ceiling:</span>
+                <span class="font-bold text-emerald-400 mono" id="vaultCapText">₹5,000</span>
+              </div>
+              <input 
+                type="range" min="1000" max="30000" step="500" value="5000" 
+                id="vaultCapRange" oninput="changeVaultCap(this.value)"
+                class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+              />
+              <p class="text-[11px] text-slate-500">Any vendor asking for more than this will be rejected by the AP2 circuit breaker.</p>
+            </div>
+
+            <div class="space-y-2 pt-3 border-t border-slate-800">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">Auto-Approve Threshold:</span>
+                <span class="font-bold text-cyan-400 mono" id="vaultAutoText">₹1,000</span>
+              </div>
+              <input 
+                type="range" min="100" max="5000" step="100" value="1000" 
+                id="vaultAutoRange" oninput="changeAutoThreshold(this.value)"
+                class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+              />
+              <p class="text-[11px] text-slate-500">Transactions under this value settle autonomously without human click.</p>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 space-y-3">
+            <h4 class="font-bold text-sm text-white">Cryptographic Mandate Document</h4>
+            <pre id="vaultJsonView" class="mono text-[11px] bg-slate-950 p-4 rounded-xl border border-slate-800 text-indigo-300 overflow-x-auto leading-relaxed custom-scrollbar max-h-56"></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================== -->
+      <!-- TAB 6: PROTOCOL CONSOLE                              -->
+      <!-- ===================================================== -->
+      <section id="section-console" class="h-full flex flex-col overflow-hidden hidden">
+        <div class="px-6 py-3 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between gap-3 shrink-0">
+          <div class="flex items-center space-x-1 text-xs">
+            <button onclick="setLogFilter('ALL')" id="flt-ALL" class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-semibold">ALL</button>
+            <button onclick="setLogFilter('LOOP')" id="flt-LOOP" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white font-semibold">LOOP</button>
+            <button onclick="setLogFilter('SEARCH')" id="flt-SEARCH" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white font-semibold">SEARCH</button>
+            <button onclick="setLogFilter('x402')" id="flt-x402" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white font-semibold">x402</button>
+            <button onclick="setLogFilter('EVM')" id="flt-EVM" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white font-semibold">EVM</button>
+          </div>
+
+          <div class="flex items-center space-x-2 text-xs">
+            <button onclick="clearLogs()" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+              <i class="fa-solid fa-trash-can mr-1"></i> Clear
+            </button>
+          </div>
+        </div>
+
+        <div id="consoleLogStream" class="flex-1 p-6 overflow-y-auto custom-scrollbar mono text-xs space-y-1.5 bg-[#05070c]">
+          <!-- Real-time log stream -->
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- MODAL: AGENT EVM WALLET & BASE SEPOLIA FAUCET MANAGER     -->
+  <!-- ========================================================= -->
+  <div id="walletModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+            <i class="fa-solid fa-wallet text-base"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm text-white">Agent Cryptographic Signer</h3>
+            <p class="text-[11px] text-slate-400">Base Sepolia L2 (ChainID: 84532)</p>
+          </div>
+        </div>
+        <button onclick="closeWalletModal()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-800 transition">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Wallet Details Box -->
+      <div class="bg-slate-950 rounded-xl p-4 border border-slate-800/80 space-y-3">
+        <div>
+          <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider block mb-1">Agent Public Address (EVM)</span>
+          <div class="flex items-center justify-between bg-slate-900 px-3 py-2 rounded-lg border border-slate-800">
+            <span id="modalWalletAddress" class="mono text-xs text-indigo-300 break-all select-all">0x64367e3e4A0A7bDb0A05b7286fea5f276F0c2Bf4</span>
+            <button onclick="copyWalletAddress()" class="ml-2 text-slate-400 hover:text-white p-1" title="Copy Address">
+              <i class="fa-regular fa-copy"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-2">
+          <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
+            <span class="text-[10px] text-slate-500 block">Base Sepolia Balance</span>
+            <div class="flex items-center justify-between mt-0.5">
+              <span id="modalWalletBalance" class="mono text-sm font-bold text-emerald-400">0.0000 ETH</span>
+              <button onclick="fetchWalletStatus()" title="Refresh Balance" class="text-[10px] text-slate-400 hover:text-indigo-400"><i class="fa-solid fa-rotate-right"></i></button>
+            </div>
+          </div>
+          <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
+            <span class="text-[10px] text-slate-500 block">Execution Mode</span>
+            <span id="modalFundingStatus" class="mono text-xs font-bold text-amber-400 mt-0.5 block">Simulated / Unfunded</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Educational Guidance for Real Transactions -->
+      <div class="p-3.5 bg-indigo-950/30 border border-indigo-800/40 rounded-xl text-xs space-y-2">
+        <div class="font-bold text-indigo-300 flex items-center gap-1.5">
+          <i class="fa-solid fa-circle-check text-emerald-400"></i> How to run a 100% REAL On-Chain Demo:
+        </div>
+        <p class="text-slate-300 text-[11px] leading-relaxed">
+          1. Copy the agent address above.<br>
+          2. Claim free testnet ETH from Coinbase Faucet or send 0.001 ETH from MetaMask on Base Sepolia.<br>
+          3. Set the top-bar toggle to <strong>"Base Sepolia"</strong>.<br>
+          4. When you execute an order, the agent broadcasts directly to the Base blockchain with a clickable <strong>BaseScan</strong> link!
+        </p>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2 pt-1">
+        <a href="https://www.coinbase.com/faucets/base-ethereum-sepolia-faucet" target="_blank" class="flex-1 py-2 px-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition text-center flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/30">
+          <i class="fa-solid fa-faucet-drip text-xs"></i> Coinbase Faucet
+        </a>
+        <a href="https://console.optimism.io/faucet" target="_blank" class="flex-1 py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition text-center flex items-center justify-center gap-1.5 border border-slate-700">
+          <i class="fa-solid fa-faucet text-xs"></i> Superchain Faucet
+        </a>
+        <a id="modalBasescanLink" href="https://sepolia.basescan.org/address/0x64367e3e4A0A7bDb0A05b7286fea5f276F0c2Bf4" target="_blank" class="py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1 border border-slate-700">
+          <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i> Basescan
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script: Client-Side Engine -->
+  <script>
+    let activeTab = 'studio';
+    let activeFilter = 'ALL';
+    let systemLogs = [];
+    let mandateState = {};
+    let marketData = { eth_inr: 210250, eth_usd: 2225 };
+
+    function navigateTab(tabName) {
+      activeTab = tabName;
+      ['studio', 'standing', 'scanner', 'ledger', 'vault', 'console'].forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        const sec = document.getElementById(`section-${t}`);
+        if (t === tabName) {
+          btn.className = "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition bg-indigo-600 text-white shadow-sm shadow-indigo-600/30";
+          sec.classList.remove('hidden');
+        } else {
+          btn.className = "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-100 hover:bg-slate-900 transition";
+          sec.classList.add('hidden');
+        }
+      });
+
+      const headers = {
+        studio: { title: "Autonomous Loop Studio", sub: "Multi-Step Plan-Search-Settle Pipeline" },
+        standing: { title: "Standing Loops & Crons", sub: "Continuous Background Autonomous Monitor" },
+        scanner: { title: "Live Web & Market Recon", sub: "Real-time DuckDuckGo & CoinGecko Ticker" },
+        ledger: { title: "Transaction Ledger", sub: "Non-Repudiable Cryptographic History" },
+        vault: { title: "AP2 Mandate Vault", sub: "Living Policy Governance & Guardrails" },
+        console: { title: "Protocol Console", sub: "Real-Time Telemetry & Log Inspector" }
+      };
+
+      document.getElementById('topHeaderTitle').innerText = headers[tabName].title;
+      document.getElementById('topHeaderSubtitle').innerText = headers[tabName].sub;
+
+      if (tabName === 'ledger') fetchLedger();
+      if (tabName === 'console') fetchLogs();
+      if (tabName === 'standing') fetchStandingLoops();
+      if (tabName === 'vault') fetchMandate();
+    }
+
+    // 1. Fetch Market & Mandate
+    async function fetchMarket() {
+      try {
+        const res = await fetch('/api/market');
+        const data = await res.json();
+        marketData = data.market;
+        document.getElementById('tickerEthInr').innerText = `₹${marketData.eth_inr.toLocaleString('en-IN')}`;
+        document.getElementById('tickerEthUsd').innerText = `$${marketData.eth_usd.toFixed(2)}`;
+        document.getElementById('reconEthInr').innerText = `₹${marketData.eth_inr.toLocaleString('en-IN')}`;
+        document.getElementById('reconEthUsd').innerText = `$${marketData.eth_usd.toFixed(2)}`;
+      } catch (e) {}
+    }
+
+    async function fetchMandate() {
+      const res = await fetch('/api/mandate');
+      const data = await res.json();
+      mandateState = data.mandate;
+      
+      document.getElementById('sidebarCapBadge').innerText = `₹${mandateState.max_spend_per_tx_inr.toLocaleString('en-IN')}`;
+      document.getElementById('vaultCapText').innerText = `₹${mandateState.max_spend_per_tx_inr.toLocaleString('en-IN')}`;
+      document.getElementById('vaultCapRange').value = mandateState.max_spend_per_tx_inr;
+
+      document.getElementById('vaultAutoText').innerText = `₹${mandateState.auto_approve_threshold_inr.toLocaleString('en-IN')}`;
+      document.getElementById('vaultAutoRange').value = mandateState.auto_approve_threshold_inr;
+
+      document.getElementById('vaultJsonView').innerText = JSON.stringify(mandateState, null, 2);
+      updateKillswitchUI(mandateState.emergency_killswitch);
+    }
+
+    async function changeVaultCap(val) {
+      document.getElementById('vaultCapText').innerText = `₹${Number(val).toLocaleString('en-IN')}`;
+      document.getElementById('sidebarCapBadge').innerText = `₹${Number(val).toLocaleString('en-IN')}`;
+      await fetch('/api/mandate/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ max_spend_per_tx_inr: val })
+      });
+      fetchLogs();
+    }
+
+    async function changeAutoThreshold(val) {
+      document.getElementById('vaultAutoText').innerText = `₹${Number(val).toLocaleString('en-IN')}`;
+      await fetch('/api/mandate/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ auto_approve_threshold_inr: val })
+      });
+    }
+
+    // 2. Killswitch
+    async function toggleEmergencyHalt() {
+      mandateState.emergency_killswitch = !mandateState.emergency_killswitch;
+      updateKillswitchUI(mandateState.emergency_killswitch);
+      await fetch('/api/mandate/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emergency_killswitch: mandateState.emergency_killswitch })
+      });
+      fetchLogs();
+    }
+
+    function updateKillswitchUI(isActive) {
+      const btn = document.getElementById('killswitchBtn');
+      const label = document.getElementById('killswitchLabel');
+      if (isActive) {
+        btn.className = "px-3 py-1.5 rounded-lg border border-red-500 bg-red-600 text-white transition flex items-center space-x-1.5 font-bold text-xs animate-pulse";
+        label.innerText = "Killswitch: ACTIVE";
+        document.getElementById('liveLoopIndicator').className = "px-2.5 py-1 rounded-full bg-red-950/60 border border-red-500/50 text-[11px] text-red-300 font-bold flex items-center space-x-1.5";
+        document.getElementById('loopStatusText').innerText = "Loops Frozen";
+      } else {
+        btn.className = "px-3 py-1.5 rounded-lg border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 transition flex items-center space-x-1.5 font-bold text-xs";
+        label.innerText = "Killswitch: OFF";
+        document.getElementById('liveLoopIndicator').className = "px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-[11px] text-slate-300 font-medium flex items-center space-x-1.5";
+        document.getElementById('loopStatusText').innerText = "Loop Daemon Idle";
+      }
+    }
+
+    async function setSettlementRail(rail) {
+      document.getElementById('railSim').className = rail === 'simulated'
+        ? "px-2.5 py-1 rounded-md bg-indigo-600 text-white font-semibold transition"
+        : "px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 font-semibold transition";
+      document.getElementById('railBase').className = rail === 'testnet_base'
+        ? "px-2.5 py-1 rounded-md bg-indigo-600 text-white font-semibold transition"
+        : "px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 font-semibold transition";
+
+      await fetch('/api/mandate/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settlement_mode: rail })
+      });
+      fetchLogs();
+    }
+
+    // 3. Autonomous Loop Execution Trigger
+    function triggerLoopExecution(goalText) {
+      document.getElementById('loopGoalInput').value = goalText;
+      handleLoopFormSubmit(new Event('submit'));
+    }
+
+    async function handleLoopFormSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('loopGoalInput');
+      const goal = input.value.trim();
+      if (!goal) return;
+
+      input.value = '';
+
+      // Activate Animated Pipeline
+      document.getElementById('flowingPipeline').classList.remove('hidden');
+      document.getElementById('node-plan').className = "flex items-center space-x-1 text-indigo-400 font-bold";
+      document.getElementById('loopPhaseLabel').innerText = "Loop 1: Decomposing Intent";
+
+      try {
+        // Step 1 -> Step 2
+        await new Promise(r => setTimeout(r, 400));
+        document.getElementById('node-plan').className = "flex items-center space-x-1 text-emerald-400 font-bold";
+        document.getElementById('node-search').className = "flex items-center space-x-1 text-indigo-400 font-bold";
+        document.getElementById('loopPhaseLabel').innerText = "Loop 2: Real Web Search (DuckDuckGo)";
+
+        const res = await fetch('/api/agent/loop', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ goal })
+        });
+
+        const data = await res.json();
+
+        if (res.status === 403) {
+          alert(`Policy Alert: ${data.message}`);
+          resetLoopGraph();
+          fetchLogs();
+          return;
+        }
+
+        const lr = data.loopResult;
+
+        // Step 3: Market Pricing
+        document.getElementById('node-search').className = "flex items-center space-x-1 text-emerald-400 font-bold";
+        document.getElementById('node-norm').className = "flex items-center space-x-1 text-indigo-400 font-bold";
+        document.getElementById('loopPhaseLabel').innerText = "Loop 3: Live CoinGecko Rate Normalization";
+        await new Promise(r => setTimeout(r, 450));
+
+        // Step 4: Policy Check
+        document.getElementById('node-norm').className = "flex items-center space-x-1 text-emerald-400 font-bold";
+        document.getElementById('node-policy').className = "flex items-center space-x-1 text-indigo-400 font-bold";
+        document.getElementById('loopPhaseLabel').innerText = "Loop 4: AP2 Mandate Evaluation";
+        await new Promise(r => setTimeout(r, 400));
+
+        document.getElementById('node-policy').className = "flex items-center space-x-1 text-emerald-400 font-bold";
+        resetLoopGraph();
+
+        // Render Results
+        renderLoopResults(lr);
+        updateReconWebHits(lr.live_web_sources);
+        fetchLogs();
+
+      } catch (err) {
+        alert(err.message);
+        resetLoopGraph();
+      }
+    }
+
+    function resetLoopGraph() {
+      document.getElementById('flowingPipeline').classList.add('hidden');
+      document.getElementById('node-plan').className = "flex items-center space-x-1 text-slate-500 font-medium";
+      document.getElementById('node-search').className = "flex items-center space-x-1 text-slate-500 font-medium";
+      document.getElementById('node-norm').className = "flex items-center space-x-1 text-slate-500 font-medium";
+      document.getElementById('node-policy').className = "flex items-center space-x-1 text-slate-500 font-medium";
+      document.getElementById('node-x402').className = "flex items-center space-x-1 text-slate-500 font-medium";
+      document.getElementById('node-settle').className = "flex items-center space-x-1 text-slate-500 font-medium";
+      document.getElementById('loopPhaseLabel').innerText = "Ready";
+    }
+
+    // 4. Render Results in Studio
+    function renderLoopResults(lr) {
+      const container = document.getElementById('dynamicStudioResults');
+      container.innerHTML = '';
+
+      // Live Web Reconnaissance Proof Card
+      if (lr.live_web_sources && lr.live_web_sources.length > 0) {
+        const webCard = document.createElement('div');
+        webCard.className = "bg-slate-900/80 border border-slate-800 rounded-2xl p-4 space-y-2.5 shadow-lg";
+        let webHitsHtml = '';
+        lr.live_web_sources.slice(0, 3).forEach(hit => {
+          webHitsHtml += `
+            <a href="${hit.url}" target="_blank" class="block p-2 rounded-xl bg-slate-950/60 hover:bg-slate-950 border border-slate-800/80 text-xs transition">
+              <span class="text-indigo-400 font-semibold block truncate">${hit.domain}</span>
+              <span class="text-slate-400 text-[11px] line-clamp-1">${hit.snippet}</span>
+            </a>
+          `;
+        });
+        webCard.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-xs text-white flex items-center gap-1.5">
+              <i class="fa-solid fa-satellite-dish text-indigo-400"></i> Live Web Reconnaissance Hits (DuckDuckGo Engine)
+            </span>
+            <span class="mono text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+              Verified Real Web
+            </span>
+          </div>
+          <div class="space-y-1.5">${webHitsHtml}</div>
+        `;
+        container.appendChild(webCard);
+      }
+
+      // Outcome Cards Grid
+      const grid = document.createElement('div');
+      grid.className = "grid grid-cols-1 md:grid-cols-3 gap-4";
+
+      lr.eligible_items.forEach(item => {
+        const isAuto = item.price_inr <= mandateState.auto_approve_threshold_inr;
+        const card = document.createElement('div');
+        card.className = "bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 transition flex flex-col justify-between shadow-xl";
+        card.innerHTML = `
+          <div class="relative h-36 bg-slate-800 overflow-hidden">
+            <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover">
+            <span class="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-600 text-white backdrop-blur">
+              ${item.badge}
+            </span>
+            <span class="absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-950/80 text-amber-300 backdrop-blur">
+              ★ ${item.rating || '4.8'}
+            </span>
+          </div>
+
+          <div class="p-4 space-y-3">
+            <div class="flex items-start justify-between">
+              <div>
+                <h4 class="font-bold text-sm text-white">${item.name}</h4>
+                <p class="text-[11px] text-slate-400">${item.category}</p>
+              </div>
+              <div class="text-right">
+                <div class="font-bold text-sm text-emerald-400">₹${item.price_inr.toLocaleString('en-IN')}</div>
+                <div class="text-[10px] mono text-slate-500">~${item.price_eth} ETH</div>
+              </div>
+            </div>
+
+            <p class="text-[11px] text-slate-400 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80 leading-relaxed">
+              ${item.pitch}
+            </p>
+
+            <button 
+              onclick="executeAutonomousCheckout('${item.id}', '${item.name}', '${item.price_inr}')"
+              class="w-full py-2.5 px-3 ${isAuto ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-indigo-600 hover:bg-indigo-500'} text-white rounded-xl text-xs font-semibold transition flex items-center justify-center space-x-2 shadow-md shadow-indigo-600/20"
+            >
+              <i class="fa-solid fa-fingerprint text-xs"></i>
+              <span>${isAuto ? 'Auto-Approve & Settle' : 'Sign AP2 Cart Mandate'}</span>
+            </button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      container.appendChild(grid);
+
+      if (lr.blocked_items && lr.blocked_items.length > 0) {
+        const guardrail = document.createElement('div');
+        guardrail.className = "text-xs text-slate-400 bg-slate-900/40 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between";
+        guardrail.innerHTML = `
+          <span class="flex items-center gap-2">
+            <i class="fa-solid fa-shield-halved text-amber-400"></i>
+            <span><strong>AP2 Policy Guardrail:</strong> 1 over-budget option (<em>${lr.blocked_items[0].name}</em> @ ₹${lr.blocked_items[0].price_inr.toLocaleString('en-IN')}) was automatically filtered out to protect your ₹${mandateState.max_spend_per_tx_inr.toLocaleString('en-IN')} mandate ceiling.</span>
+          </span>
+        `;
+        container.appendChild(guardrail);
+      }
+    }
+
+    // 5. Checkout & x402 Handshake Loop
+    async function executeAutonomousCheckout(itemId, itemName, priceInr) {
+      document.getElementById('flowingPipeline').classList.remove('hidden');
+      document.getElementById('node-x402').className = "flex items-center space-x-1 text-indigo-400 font-bold";
+      document.getElementById('loopPhaseLabel').innerText = "Loop 5: HTTP 402 Handshake";
+
+      const initialRes = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item_id: itemId })
+      });
+
+      if (initialRes.status === 402) {
+        const challenge = await initialRes.json();
+        
+        await new Promise(r => setTimeout(r, 600));
+        document.getElementById('node-x402').className = "flex items-center space-x-1 text-emerald-400 font-bold";
+        document.getElementById('node-settle').className = "flex items-center space-x-1 text-indigo-400 font-bold";
+        document.getElementById('loopPhaseLabel').innerText = "Loop 6: EVM Wallet Settle";
+
+        const mockHash = "0x" + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
+        await new Promise(r => setTimeout(r, 700));
+
+        const paidRes = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-402-Payment-Tx': mockHash
+          },
+          body: JSON.stringify({ item_id: itemId })
+        });
+
+        const receiptData = await paidRes.json();
+        document.getElementById('node-settle').className = "flex items-center space-x-1 text-emerald-400 font-bold";
+        resetLoopGraph();
+
+        renderReceiptCard(receiptData.receipt);
+        fetchLogs();
+      }
+    }
+
+    function renderReceiptCard(receipt) {
+      const container = document.getElementById('dynamicStudioResults');
+      const div = document.createElement('div');
+      div.className = "bg-gradient-to-b from-slate-900 to-slate-950 border border-emerald-500/40 rounded-2xl p-6 shadow-2xl space-y-4 max-w-xl mx-auto";
+      
+      const onchainBadge = receipt.is_live_onchain 
+        ? `<span class="text-[10px] uppercase font-bold tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30 flex items-center gap-1"><i class="fa-solid fa-cube text-emerald-400"></i> LIVE ON-CHAIN MINED (Base Sepolia)</span>`
+        : `<span class="text-[10px] uppercase font-bold tracking-wider text-teal-300 bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/30 flex items-center gap-1"><i class="fa-solid fa-signature text-teal-300"></i> CRYPTOGRAPHIC EVM SIGNATURE</span>`;
+
+      div.innerHTML = `
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            ${onchainBadge}
+            <h3 class="text-base font-bold text-white mt-1">Autonomous Order Finalized: ${receipt.item_name}</h3>
+          </div>
+          <div class="w-9 h-9 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+            <i class="fa-solid fa-check"></i>
+          </div>
+        </div>
+
+        <div class="space-y-2 text-xs">
+          <div class="flex justify-between py-1 border-b border-slate-800/60">
+            <span class="text-slate-400">Order Reference:</span>
+            <span class="mono font-semibold text-slate-200">${receipt.order_id}</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-slate-800/60">
+            <span class="text-slate-400">Amount Paid:</span>
+            <span class="font-bold text-emerald-400">${receipt.amount_paid_inr} (${receipt.amount_paid_eth})</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-slate-800/60">
+            <span class="text-slate-400">Merchant:</span>
+            <span class="text-slate-300">${receipt.merchant}</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-slate-800/60">
+            <span class="text-slate-400">Settlement Rail:</span>
+            <span class="mono text-indigo-400 font-semibold">${receipt.settlement_network}</span>
+          </div>
+          <div class="py-1">
+            <span class="text-slate-400 block mb-1">On-Chain Tx Proof (x402):</span>
+            <span class="mono text-[10px] text-indigo-300 break-all bg-slate-950 p-2 rounded border border-slate-800 block">
+              ${receipt.payment_tx_hash}
+            </span>
+          </div>
+          <div class="py-1">
+            <span class="text-slate-400 block mb-1">Merchant Digital Signature (AP2):</span>
+            <span class="mono text-[10px] text-slate-500 break-all bg-slate-950 p-2 rounded border border-slate-800 block">
+              ${receipt.merchant_signature}
+            </span>
+          </div>
+        </div>
+
+        <!-- BaseScan Explorer Link Button -->
+        <a 
+          href="${receipt.explorer_url}" 
+          target="_blank" 
+          class="w-full py-2.5 px-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white rounded-xl text-xs font-semibold transition flex items-center justify-center space-x-2 shadow-lg shadow-indigo-600/30"
+        >
+          <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+          <span>${receipt.is_live_onchain ? 'View Mined Transaction on BaseScan Explorer' : 'Inspect Block Proof on BaseScan'}</span>
+        </a>
+
+        <div class="pt-2 flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-800">
+          <span><i class="fa-solid fa-shield-check text-emerald-400 mr-1"></i>Zero Human OTP/Captcha Required</span>
+          <span class="mono text-slate-500">${receipt.timestamp.slice(0, 19)}</span>
+        </div>
+      `;
+      container.prepend(div);
+      container.scrollTop = 0;
+    }
+
+    function updateReconWebHits(hits) {
+      const container = document.getElementById('reconWebHitsList');
+      if (!hits || hits.length === 0) return;
+      container.innerHTML = '';
+      hits.forEach(hit => {
+        const item = document.createElement('a');
+        item.href = hit.url;
+        item.target = "_blank";
+        item.className = "block p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs hover:border-indigo-500/50 transition";
+        item.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-indigo-400 font-semibold truncate">${hit.domain}</span>
+            <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-500"></i>
+          </div>
+          <p class="text-slate-400 text-[11px] mt-1">${hit.snippet}</p>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    // 6. Standing Loops API & UI
+    async function fetchStandingLoops() {
+      const res = await fetch('/api/loops/standing');
+      const data = await res.json();
+      const grid = document.getElementById('standingLoopsGrid');
+      grid.innerHTML = '';
+
+      data.standing_loops.forEach(loop => {
+        const div = document.createElement('div');
+        div.className = "bg-slate-900/60 border border-slate-800 rounded-2xl p-5 space-y-3";
+        div.innerHTML = `
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="flex items-center space-x-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-glow"></span>
+                <h4 class="font-bold text-sm text-white">${loop.name}</h4>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1">${loop.condition}</p>
+            </div>
+            <span class="mono text-[10px] bg-slate-950 px-2 py-0.5 rounded border border-slate-800 text-indigo-400 font-bold">
+              ${loop.status}
+            </span>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 text-center text-xs pt-2 border-t border-slate-800/80">
+            <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800/60">
+              <span class="text-[10px] text-slate-500 block">Frequency</span>
+              <span class="font-semibold text-slate-200 mono">${loop.interval_sec}s</span>
+            </div>
+            <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800/60">
+              <span class="text-[10px] text-slate-500 block">Spend / Run</span>
+              <span class="font-semibold text-emerald-400 mono">₹${loop.spend_per_run_inr}</span>
+            </div>
+            <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800/60">
+              <span class="text-[10px] text-slate-500 block">Iterations</span>
+              <span class="font-semibold text-cyan-400 mono">${loop.iterations}</span>
+            </div>
+          </div>
+        `;
+        grid.appendChild(div);
+      });
+    }
+
+    async function promptNewLoopModal() {
+      const name = prompt("Enter loop name:", "Gas-Gated ETH Micro-DCA");
+      if (!name) return;
+      const cond = prompt("Trigger condition:", "Buy when Base gas < 0.05 gwei");
+      await fetch('/api/loops/standing/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, condition: cond, interval_sec: 20, spend_per_run_inr: 500 })
+      });
+      fetchStandingLoops();
+    }
+
+    // 7. Ledger & Console
+    async function fetchLedger() {
+      const res = await fetch('/api/ledger');
+      const data = await res.json();
+      document.getElementById('ledgerOrdersText').innerText = data.count;
+      document.getElementById('ledgerCountBadge').innerText = data.count;
+      document.getElementById('ledgerVolumeText').innerText = `₹${data.total_spent_inr.toLocaleString('en-IN')}`;
+
+      const tbody = document.getElementById('ledgerRowsContainer');
+      tbody.innerHTML = '';
+      data.ledger.forEach(tx => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-900/40 transition";
+        const explorerLink = tx.explorer_url || `https://sepolia.basescan.org/tx/${tx.tx_hash}`;
+        tr.innerHTML = `
+          <td class="py-3 px-4 mono text-[11px] text-slate-500">${tx.timestamp.slice(11, 19)}</td>
+          <td class="py-3 px-4 mono font-semibold text-slate-200">${tx.order_id}</td>
+          <td class="py-3 px-4">
+            <span class="font-medium text-slate-200">${tx.item_name}</span>
+            <span class="text-[10px] text-slate-500 block">${tx.merchant}</span>
+          </td>
+          <td class="py-3 px-4">
+            <span class="font-bold text-emerald-400">₹${tx.amount_inr.toLocaleString('en-IN')}</span>
+            <span class="text-[10px] mono text-slate-500 block">${tx.amount_eth} ETH</span>
+          </td>
+          <td class="py-3 px-4 mono text-[11px] text-indigo-400">${tx.settlement_network}</td>
+          <td class="py-3 px-4 mono text-[11px]">
+            <a href="${explorerLink}" target="_blank" class="text-indigo-400 hover:text-indigo-300 hover:underline inline-flex items-center gap-1">
+              <span>${tx.tx_hash.slice(0, 8)}...${tx.tx_hash.slice(-4)}</span>
+              <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+            </a>
+          </td>
+          <td class="py-3 px-4">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              ${tx.status}
+            </span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function fetchLogs() {
+      const res = await fetch('/api/logs');
+      const data = await res.json();
+      systemLogs = data.logs;
+      renderLogStream();
+    }
+
+    function setLogFilter(level) {
+      activeFilter = level;
+      ['ALL', 'LOOP', 'SEARCH', 'x402', 'EVM'].forEach(lvl => {
+        const btn = document.getElementById(`flt-${lvl}`);
+        if (lvl === level) btn.className = "px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-semibold";
+        else btn.className = "px-2.5 py-1 rounded-lg text-slate-400 hover:text-white font-semibold";
+      });
+      renderLogStream();
+    }
+
+    function renderLogStream() {
+      const container = document.getElementById('consoleLogStream');
+      const filtered = systemLogs.filter(l => activeFilter === 'ALL' || l.level === activeFilter);
+      container.innerHTML = '';
+      filtered.forEach(log => {
+        const row = document.createElement('div');
+        const colors = {
+          INFO: "text-slate-400",
+          LOOP: "text-indigo-400 font-semibold",
+          SEARCH: "text-teal-400 font-semibold",
+          MANDATE: "text-purple-400 font-semibold",
+          x402: "text-amber-400 font-semibold",
+          EVM: "text-emerald-400 font-semibold",
+          WARN: "text-rose-400 font-bold"
+        };
+        const color = colors[log.level] || "text-slate-300";
+        row.className = "flex items-start space-x-2 py-0.5 hover:bg-slate-900/60 rounded px-1";
+        row.innerHTML = `
+          <span class="text-slate-600 shrink-0">[${log.timestamp.slice(11, 19)}]</span>
+          <span class="px-1.5 py-0.2 rounded text-[10px] bg-slate-900 border border-slate-800 ${color} shrink-0">${log.level}</span>
+          <span class="text-slate-500 shrink-0">[${log.tag}]</span>
+          <span class="${color} break-all">${log.message}</span>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    async function clearLogs() {
+      await fetch('/api/logs', { method: 'DELETE' });
+      fetchLogs();
+    }
+
+    // 8. Agent Wallet Management & Real On-Chain Sync
+    let walletInfo = {
+      address: "0x64367e3e4A0A7bDb0A05b7286fea5f276F0c2Bf4",
+      balance_eth: "0.0",
+      is_funded: false
+    };
+
+    async function fetchWalletStatus() {
+      try {
+        const res = await fetch('/api/wallet/status');
+        const data = await res.json();
+        if (data.status === 'success') {
+          walletInfo = data;
+          const shortAddr = `${data.address.slice(0, 6)}...${data.address.slice(-4)}`;
+          document.getElementById('sidebarWalletText').innerText = shortAddr;
+          document.getElementById('modalWalletAddress').innerText = data.address;
+          const bal = parseFloat(data.balance_eth).toFixed(4);
+          document.getElementById('topWalletBalance').innerText = `${bal} ETH`;
+          document.getElementById('modalWalletBalance').innerText = `${bal} ETH`;
+          document.getElementById('modalBasescanLink').href = `https://sepolia.basescan.org/address/${data.address}`;
+          
+          const isFunded = data.is_funded;
+          const badge = document.getElementById('sidebarFundedBadge');
+          const modalStatus = document.getElementById('modalFundingStatus');
+          if (isFunded) {
+            badge.innerText = "(Funded)";
+            badge.className = "text-[9px] text-emerald-400 font-mono font-bold";
+            modalStatus.innerText = "Funded · Ready for On-Chain Broadcast";
+            modalStatus.className = "mono text-xs font-bold text-emerald-400 mt-0.5 block";
+          } else {
+            badge.innerText = "(Unfunded)";
+            badge.className = "text-[9px] text-amber-400 font-mono";
+            modalStatus.innerText = "Unfunded (Simulated Fallback)";
+            modalStatus.className = "mono text-xs font-bold text-amber-400 mt-0.5 block";
+          }
+        }
+      } catch (e) {}
+    }
+
+    function openWalletModal() {
+      document.getElementById('walletModal').classList.remove('hidden');
+      fetchWalletStatus();
+    }
+
+    function closeWalletModal() {
+      document.getElementById('walletModal').classList.add('hidden');
+    }
+
+    function copyWalletAddress() {
+      const addr = walletInfo.address || "0x64367e3e4A0A7bDb0A05b7286fea5f276F0c2Bf4";
+      navigator.clipboard.writeText(addr);
+      alert(`Agent Wallet Address copied to clipboard:\n${addr}\n\nPaste this in the Base Sepolia Faucet or transfer testnet ETH to test real blockchain transactions!`);
+    }
+
+    // Theme Management
+    let currentTheme = localStorage.getItem('apex_theme') || 'dark';
+
+    function toggleTheme() {
+      currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      applyTheme(currentTheme);
+    }
+
+    function applyTheme(theme) {
+      const btn = document.getElementById('themeToggleBtn');
+      if (!btn) return;
+      if (theme === 'light') {
+        document.body.classList.add('light-theme');
+        document.documentElement.classList.remove('dark');
+        btn.innerHTML = `<i class="fa-solid fa-moon text-indigo-400"></i> <span>Dark Theme</span>`;
+        localStorage.setItem('apex_theme', 'light');
+      } else {
+        document.body.classList.remove('light-theme');
+        document.documentElement.classList.add('dark');
+        btn.innerHTML = `<i class="fa-solid fa-sun text-amber-400"></i> <span>Light Theme</span>`;
+        localStorage.setItem('apex_theme', 'dark');
+      }
+    }
+
+    // Startup
+    window.onload = () => {
+      applyTheme(currentTheme);
+      fetchWalletStatus();
+      fetchMarket();
+      fetchMandate();
+      fetchLogs();
+      fetchStandingLoops();
+      setInterval(fetchWalletStatus, 15000);
+      setInterval(fetchLogs, 5000);
+    };
+  </script>
+</body>
+</html>
