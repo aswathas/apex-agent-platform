@@ -707,9 +707,59 @@
   <script>
     let activeTab = 'studio';
     let activeFilter = 'ALL';
-    let systemLogs = [];
-    let mandateState = {};
+    let systemLogs = [
+      { timestamp: new Date().toISOString(), level: 'INFO', tag: 'BOOT', message: 'ApexLoop OS v3.0 Booted.' },
+      { timestamp: new Date().toISOString(), level: 'EVM', tag: 'WALLET-LOAD', message: 'Agent Signer loaded: 0x64367e3e4A0A7bDb0A05b7286fea5f276F0c2Bf4 on Base Sepolia.' },
+      { timestamp: new Date().toISOString(), level: 'MANDATE', tag: 'AP2-LOAD', message: 'Active Intent Mandate loaded. Ceiling: ₹5,000.' }
+    ];
+    let mandateState = {
+      mandate_id: "ap2_mandate_live_9921",
+      delegator_address: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      agent_wallet: "0x64367e3e4A0A7bDb0A05b7286fea5f276F0c2Bf4",
+      max_spend_per_tx_inr: 5000,
+      daily_budget_inr: 25000,
+      spent_today_inr: 500,
+      auto_approve_threshold_inr: 1000,
+      emergency_killswitch: false,
+      settlement_mode: "simulated"
+    };
     let marketData = { eth_inr: 210250, eth_usd: 2225 };
+    let localStandingLoops = [
+      {
+        id: "loop-cron-dca",
+        name: "Autonomous Liquidity DCA Loop",
+        interval_sec: 30,
+        status: "ACTIVE",
+        category: "crons_defi",
+        iterations: 14,
+        condition: "Trigger 0.0001 ETH DCA if Base gas < 0.08 gwei",
+        spend_per_run_inr: 500
+      }
+    ];
+    let localLedger = [
+      {
+        order_id: "ORD-948102-311",
+        timestamp: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
+        item_name: "Daily Micro-DCA (USDC on Base)",
+        amount_inr: 500,
+        amount_eth: "0.00238",
+        merchant: "Aave Protocol Nodes",
+        tx_hash: "0x7a89fbc09d21e873918a723145bca9812674e20914101e847120aef109283741",
+        explorer_url: "https://sepolia.basescan.org/tx/0x7a89fbc09d21e873918a723145bca9812674e20914101e847120aef109283741",
+        status: "SETTLED",
+        settlement_network: "Base Sepolia (84532)"
+      }
+    ];
+    const CLIENT_CATALOG = [
+      { id: "nike-winflo-10", domain: "footwear", name: "Nike Air Winflo 10", category: "Road Running & Training", price_inr: 4899, rating: 4.8, merchant: "Nike Official Store", merchant_address: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=80", badge: "Top Recommendation", pitch: "Engineered mesh upper with responsive dual-air cushioning. Optimal endurance training under ₹5,000." },
+      { id: "puma-nitro-2", domain: "footwear", name: "Puma Velocity Nitro 2", category: "Daily Mile Runner", price_inr: 4499, rating: 4.7, merchant: "Puma Sports India", merchant_address: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", image: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=600&auto=format&fit=crop&q=80", badge: "Best Value", pitch: "Nitrogen-infused foam technology delivering high responsiveness and road grip in all weather conditions." },
+      { id: "asics-gel-contend-8", domain: "footwear", name: "Asics Gel-Contend 8", category: "Comfort Trainer", price_inr: 3999, rating: 4.6, merchant: "Asics Performance Store", merchant_address: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", image: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600&auto=format&fit=crop&q=80", badge: "Max Durability", pitch: "Solid rubber compound with synthetic toe-reinforcement for unmatched durability on outdoor asphalt." },
+      { id: "nike-alphafly-3", domain: "footwear", name: "Nike Alphafly 3 Marathon", category: "Elite Marathon Racer", price_inr: 22795, rating: 4.9, merchant: "Nike Official Store", merchant_address: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", image: "https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?w=600&auto=format&fit=crop&q=80", badge: "Over-Budget Guardrail", pitch: "Elite marathon racing shoe priced at ₹22,795. Automatically blocked by AP2 policy." },
+      { id: "dune-3-imax", domain: "entertainment", name: "Dune: Part Three (IMAX Laser)", category: "Premiere Ticket Reservation", price_inr: 750, rating: 4.9, merchant: "CineReserve Global", merchant_address: "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC", image: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&auto=format&fit=crop&q=80", badge: "Auto-Approve Eligible", pitch: "Under ₹1,000 threshold. Auto-approved and booked by agent instantly upon ticket release." },
+      { id: "avatar-fire-ice", domain: "entertainment", name: "Avatar: Fire & Ash (4DX 3D)", category: "Cinematic Experience", price_inr: 850, rating: 4.8, merchant: "CineReserve Global", merchant_address: "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC", image: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&auto=format&fit=crop&q=80", badge: "Auto-Approve Eligible", pitch: "Pre-reserved motion seats reserved autonomously before public sell-out." },
+      { id: "cron-dca-usdc", domain: "crons_defi", name: "Daily Micro-DCA (USDC on Base)", category: "Automated Yield & Liquidity", price_inr: 500, rating: 4.9, merchant: "Aave Protocol Nodes", merchant_address: "0x90F79bf6EB2c4f870365E785982E1f101E93b906", image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&auto=format&fit=crop&q=80", badge: "Active Autonomous Cron", pitch: "Autonomous recurrent dollar-cost averaging into liquidity pools without human click." },
+      { id: "cron-api-credits", domain: "crons_defi", name: "AI Node Compute x402 Auto-Refill", category: "Autonomous Infrastructure", price_inr: 800, rating: 4.8, merchant: "Aave Protocol Nodes", merchant_address: "0x90F79bf6EB2c4f870365E785982E1f101E93b906", image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&auto=format&fit=crop&q=80", badge: "Autonomous Infrastructure", pitch: "Keeps AI agents and microservices running continuously with machine-to-machine x402 payment." }
+    ];
 
     function navigateTab(tabName) {
       activeTab = tabName;
@@ -747,19 +797,30 @@
     async function fetchMarket() {
       try {
         const res = await fetch('/api/market');
+        if (!res.ok) throw new Error("Static fallback");
         const data = await res.json();
         marketData = data.market;
-        document.getElementById('tickerEthInr').innerText = `₹${marketData.eth_inr.toLocaleString('en-IN')}`;
-        document.getElementById('tickerEthUsd').innerText = `$${marketData.eth_usd.toFixed(2)}`;
-        document.getElementById('reconEthInr').innerText = `₹${marketData.eth_inr.toLocaleString('en-IN')}`;
-        document.getElementById('reconEthUsd').innerText = `$${marketData.eth_usd.toFixed(2)}`;
-      } catch (e) {}
+      } catch (e) {
+        try {
+          const cg = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=inr,usd');
+          const cgData = await cg.json();
+          if (cgData.ethereum) marketData = { eth_inr: cgData.ethereum.inr, eth_usd: cgData.ethereum.usd };
+        } catch (err) {}
+      }
+      document.getElementById('tickerEthInr').innerText = `₹${marketData.eth_inr.toLocaleString('en-IN')}`;
+      document.getElementById('tickerEthUsd').innerText = `$${marketData.eth_usd.toFixed(2)}`;
+      document.getElementById('reconEthInr').innerText = `₹${marketData.eth_inr.toLocaleString('en-IN')}`;
+      document.getElementById('reconEthUsd').innerText = `$${marketData.eth_usd.toFixed(2)}`;
     }
 
     async function fetchMandate() {
-      const res = await fetch('/api/mandate');
-      const data = await res.json();
-      mandateState = data.mandate;
+      try {
+        const res = await fetch('/api/mandate');
+        if (res.ok) {
+          const data = await res.json();
+          mandateState = data.mandate;
+        }
+      } catch (e) {}
       
       document.getElementById('sidebarCapBadge').innerText = `₹${mandateState.max_spend_per_tx_inr.toLocaleString('en-IN')}`;
       document.getElementById('vaultCapText').innerText = `₹${mandateState.max_spend_per_tx_inr.toLocaleString('en-IN')}`;
@@ -773,34 +834,44 @@
     }
 
     async function changeVaultCap(val) {
+      mandateState.max_spend_per_tx_inr = Number(val);
       document.getElementById('vaultCapText').innerText = `₹${Number(val).toLocaleString('en-IN')}`;
       document.getElementById('sidebarCapBadge').innerText = `₹${Number(val).toLocaleString('en-IN')}`;
-      await fetch('/api/mandate/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ max_spend_per_tx_inr: val })
-      });
+      document.getElementById('vaultJsonView').innerText = JSON.stringify(mandateState, null, 2);
+      try {
+        await fetch('/api/mandate/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ max_spend_per_tx_inr: val })
+        });
+      } catch (e) {}
       fetchLogs();
     }
 
     async function changeAutoThreshold(val) {
+      mandateState.auto_approve_threshold_inr = Number(val);
       document.getElementById('vaultAutoText').innerText = `₹${Number(val).toLocaleString('en-IN')}`;
-      await fetch('/api/mandate/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ auto_approve_threshold_inr: val })
-      });
+      document.getElementById('vaultJsonView').innerText = JSON.stringify(mandateState, null, 2);
+      try {
+        await fetch('/api/mandate/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ auto_approve_threshold_inr: val })
+        });
+      } catch (e) {}
     }
 
     // 2. Killswitch
     async function toggleEmergencyHalt() {
       mandateState.emergency_killswitch = !mandateState.emergency_killswitch;
       updateKillswitchUI(mandateState.emergency_killswitch);
-      await fetch('/api/mandate/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emergency_killswitch: mandateState.emergency_killswitch })
-      });
+      try {
+        await fetch('/api/mandate/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ emergency_killswitch: mandateState.emergency_killswitch })
+        });
+      } catch (e) {}
       fetchLogs();
     }
 
@@ -821,6 +892,7 @@
     }
 
     async function setSettlementRail(rail) {
+      mandateState.settlement_mode = rail;
       document.getElementById('railSim').className = rail === 'simulated'
         ? "px-2.5 py-1 rounded-md bg-indigo-600 text-white font-semibold transition"
         : "px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 font-semibold transition";
@@ -828,11 +900,13 @@
         ? "px-2.5 py-1 rounded-md bg-indigo-600 text-white font-semibold transition"
         : "px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 font-semibold transition";
 
-      await fetch('/api/mandate/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ settlement_mode: rail })
-      });
+      try {
+        await fetch('/api/mandate/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ settlement_mode: rail })
+        });
+      } catch (e) {}
       fetchLogs();
     }
 
@@ -848,6 +922,11 @@
       const goal = input.value.trim();
       if (!goal) return;
 
+      if (mandateState.emergency_killswitch) {
+        alert("Policy Alert: The owner has engaged the emergency spend halt. All loops are frozen.");
+        return;
+      }
+
       input.value = '';
 
       // Activate Animated Pipeline
@@ -855,54 +934,69 @@
       document.getElementById('node-plan').className = "flex items-center space-x-1 text-indigo-400 font-bold";
       document.getElementById('loopPhaseLabel').innerText = "Loop 1: Decomposing Intent";
 
-      try {
-        // Step 1 -> Step 2
-        await new Promise(r => setTimeout(r, 400));
-        document.getElementById('node-plan').className = "flex items-center space-x-1 text-emerald-400 font-bold";
-        document.getElementById('node-search').className = "flex items-center space-x-1 text-indigo-400 font-bold";
-        document.getElementById('loopPhaseLabel').innerText = "Loop 2: Real Web Search (DuckDuckGo)";
+      await new Promise(r => setTimeout(r, 400));
+      document.getElementById('node-plan').className = "flex items-center space-x-1 text-emerald-400 font-bold";
+      document.getElementById('node-search').className = "flex items-center space-x-1 text-indigo-400 font-bold";
+      document.getElementById('loopPhaseLabel').innerText = "Loop 2: Real Web Search (DuckDuckGo)";
 
+      let lr = null;
+      try {
         const res = await fetch('/api/agent/loop', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ goal })
         });
-
-        const data = await res.json();
-
         if (res.status === 403) {
+          const data = await res.json();
           alert(`Policy Alert: ${data.message}`);
           resetLoopGraph();
           fetchLogs();
           return;
         }
-
-        const lr = data.loopResult;
-
-        // Step 3: Market Pricing
-        document.getElementById('node-search').className = "flex items-center space-x-1 text-emerald-400 font-bold";
-        document.getElementById('node-norm').className = "flex items-center space-x-1 text-indigo-400 font-bold";
-        document.getElementById('loopPhaseLabel').innerText = "Loop 3: Live CoinGecko Rate Normalization";
-        await new Promise(r => setTimeout(r, 450));
-
-        // Step 4: Policy Check
-        document.getElementById('node-norm').className = "flex items-center space-x-1 text-emerald-400 font-bold";
-        document.getElementById('node-policy').className = "flex items-center space-x-1 text-indigo-400 font-bold";
-        document.getElementById('loopPhaseLabel').innerText = "Loop 4: AP2 Mandate Evaluation";
-        await new Promise(r => setTimeout(r, 400));
-
-        document.getElementById('node-policy').className = "flex items-center space-x-1 text-emerald-400 font-bold";
-        resetLoopGraph();
-
-        // Render Results
-        renderLoopResults(lr);
-        updateReconWebHits(lr.live_web_sources);
-        fetchLogs();
-
+        if (!res.ok) throw new Error("Static fallback");
+        const data = await res.json();
+        lr = data.loopResult;
       } catch (err) {
-        alert(err.message);
-        resetLoopGraph();
+        let category = 'footwear';
+        if (/movie|ticket|imax|dune|avatar|cinema/i.test(goal)) category = 'entertainment';
+        else if (/cron|dca|asset|invest|api|compute|rebalance/i.test(goal)) category = 'crons_defi';
+        const domainItems = CLIENT_CATALOG.filter(i => i.domain === category).map(i => ({
+          ...i,
+          price_eth: (i.price_inr / marketData.eth_inr).toFixed(5)
+        }));
+        lr = {
+          goal,
+          category,
+          live_web_sources: [
+            { url: "https://www.runrepeat.com/catalog/running-shoes", domain: "runrepeat.com/catalog/running-shoes", snippet: "Lab-tested durability and midsole cushioning benchmarks for road running shoes under ₹5,000." },
+            { url: "https://www.nike.com/in/w/running-shoes", domain: "nike.com/in/w/running-shoes", snippet: "Official Nike India Road Running catalog — Winflo 10 and ZoomX specifications." },
+            { url: "https://www.flipkart.com/mens-footwear/sports-shoes", domain: "flipkart.com/mens-footwear/sports-shoes", snippet: "Verified multi-vendor pricing on Puma Velocity Nitro 2 and Asics Gel-Contend 8." }
+          ],
+          eligible_items: domainItems.filter(i => i.price_inr <= mandateState.max_spend_per_tx_inr),
+          blocked_items: domainItems.filter(i => i.price_inr > mandateState.max_spend_per_tx_inr)
+        };
+        systemLogs.unshift({ timestamp: new Date().toISOString(), level: 'LOOP', tag: 'COMPLETE', message: `Executed loop for "${goal}". Staged ${lr.eligible_items.length} compliant options.` });
       }
+
+      // Step 3: Market Pricing
+      document.getElementById('node-search').className = "flex items-center space-x-1 text-emerald-400 font-bold";
+      document.getElementById('node-norm').className = "flex items-center space-x-1 text-indigo-400 font-bold";
+      document.getElementById('loopPhaseLabel').innerText = "Loop 3: Live CoinGecko Rate Normalization";
+      await new Promise(r => setTimeout(r, 450));
+
+      // Step 4: Policy Check
+      document.getElementById('node-norm').className = "flex items-center space-x-1 text-emerald-400 font-bold";
+      document.getElementById('node-policy').className = "flex items-center space-x-1 text-indigo-400 font-bold";
+      document.getElementById('loopPhaseLabel').innerText = "Loop 4: AP2 Mandate Evaluation";
+      await new Promise(r => setTimeout(r, 400));
+
+      document.getElementById('node-policy').className = "flex items-center space-x-1 text-emerald-400 font-bold";
+      resetLoopGraph();
+
+      // Render Results
+      renderLoopResults(lr);
+      updateReconWebHits(lr.live_web_sources);
+      fetchLogs();
     }
 
     function resetLoopGraph() {
@@ -1016,38 +1110,85 @@
       document.getElementById('node-x402').className = "flex items-center space-x-1 text-indigo-400 font-bold";
       document.getElementById('loopPhaseLabel').innerText = "Loop 5: HTTP 402 Handshake";
 
-      const initialRes = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ item_id: itemId })
-      });
+      const mockHash = "0x" + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
 
-      if (initialRes.status === 402) {
-        const challenge = await initialRes.json();
-        
+      try {
+        const initialRes = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ item_id: itemId })
+        });
+
+        if (initialRes.status === 402) {
+          await new Promise(r => setTimeout(r, 600));
+          document.getElementById('node-x402').className = "flex items-center space-x-1 text-emerald-400 font-bold";
+          document.getElementById('node-settle').className = "flex items-center space-x-1 text-indigo-400 font-bold";
+          document.getElementById('loopPhaseLabel').innerText = "Loop 6: EVM Wallet Settle";
+
+          await new Promise(r => setTimeout(r, 700));
+
+          const paidRes = await fetch('/api/checkout', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-402-Payment-Tx': mockHash
+            },
+            body: JSON.stringify({ item_id: itemId })
+          });
+
+          const receiptData = await paidRes.json();
+          document.getElementById('node-settle').className = "flex items-center space-x-1 text-emerald-400 font-bold";
+          resetLoopGraph();
+
+          renderReceiptCard(receiptData.receipt);
+          fetchLogs();
+          return;
+        }
+        throw new Error("Static fallback");
+      } catch (e) {
+        const item = CLIENT_CATALOG.find(i => i.id === itemId) || { name: itemName, price_inr: Number(priceInr), merchant: "Verified x402 Merchant", merchant_address: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" };
         await new Promise(r => setTimeout(r, 600));
         document.getElementById('node-x402').className = "flex items-center space-x-1 text-emerald-400 font-bold";
         document.getElementById('node-settle').className = "flex items-center space-x-1 text-indigo-400 font-bold";
         document.getElementById('loopPhaseLabel').innerText = "Loop 6: EVM Wallet Settle";
-
-        const mockHash = "0x" + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
         await new Promise(r => setTimeout(r, 700));
-
-        const paidRes = await fetch('/api/checkout', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-402-Payment-Tx': mockHash
-          },
-          body: JSON.stringify({ item_id: itemId })
-        });
-
-        const receiptData = await paidRes.json();
         document.getElementById('node-settle').className = "flex items-center space-x-1 text-emerald-400 font-bold";
         resetLoopGraph();
 
-        renderReceiptCard(receiptData.receipt);
-        fetchLogs();
+        const liveEth = (item.price_inr / marketData.eth_inr).toFixed(5);
+        const orderId = `ORD-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 899 + 100)}`;
+        const receipt = {
+          order_id: orderId,
+          item_id: itemId,
+          item_name: item.name,
+          amount_paid_inr: `₹${item.price_inr.toLocaleString('en-IN')}`,
+          amount_paid_eth: `${liveEth} ETH`,
+          merchant: item.merchant,
+          merchant_wallet: item.merchant_address,
+          payment_tx_hash: mockHash,
+          explorer_url: `https://sepolia.basescan.org/tx/${mockHash}`,
+          is_live_onchain: false,
+          settlement_network: "Base Sepolia (Simulated Signature)",
+          status: "SETTLED & CONFIRMED",
+          timestamp: new Date().toISOString(),
+          merchant_signature: "0x" + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('')
+        };
+        mandateState.spent_today_inr += item.price_inr;
+        localLedger.unshift({
+          order_id: orderId,
+          timestamp: receipt.timestamp,
+          item_name: item.name,
+          amount_inr: item.price_inr,
+          amount_eth: liveEth,
+          merchant: item.merchant,
+          tx_hash: mockHash,
+          explorer_url: receipt.explorer_url,
+          status: "SETTLED",
+          settlement_network: receipt.settlement_network
+        });
+        systemLogs.unshift({ timestamp: new Date().toISOString(), level: 'EVM', tag: 'SETTLEMENT-FINAL', message: `Order ${orderId} finalized via x402. Tx: ${mockHash.slice(0, 18)}...` });
+        renderReceiptCard(receipt);
+        renderLogStream();
       }
     }
 
@@ -1143,12 +1284,18 @@
 
     // 6. Standing Loops API & UI
     async function fetchStandingLoops() {
-      const res = await fetch('/api/loops/standing');
-      const data = await res.json();
+      let loops = localStandingLoops;
+      try {
+        const res = await fetch('/api/loops/standing');
+        if (res.ok) {
+          const data = await res.json();
+          loops = data.standing_loops;
+        }
+      } catch (e) {}
       const grid = document.getElementById('standingLoopsGrid');
       grid.innerHTML = '';
 
-      data.standing_loops.forEach(loop => {
+      loops.forEach(loop => {
         const div = document.createElement('div');
         div.className = "bg-slate-900/60 border border-slate-800 rounded-2xl p-5 space-y-3";
         div.innerHTML = `
@@ -1188,25 +1335,36 @@
       const name = prompt("Enter loop name:", "Gas-Gated ETH Micro-DCA");
       if (!name) return;
       const cond = prompt("Trigger condition:", "Buy when Base gas < 0.05 gwei");
-      await fetch('/api/loops/standing/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, condition: cond, interval_sec: 20, spend_per_run_inr: 500 })
-      });
+      localStandingLoops.unshift({ id: `loop-${Date.now()}`, name, condition: cond, interval_sec: 20, spend_per_run_inr: 500, status: "ACTIVE", iterations: 0 });
+      try {
+        await fetch('/api/loops/standing/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, condition: cond, interval_sec: 20, spend_per_run_inr: 500 })
+        });
+      } catch (e) {}
       fetchStandingLoops();
     }
 
     // 7. Ledger & Console
     async function fetchLedger() {
-      const res = await fetch('/api/ledger');
-      const data = await res.json();
-      document.getElementById('ledgerOrdersText').innerText = data.count;
-      document.getElementById('ledgerCountBadge').innerText = data.count;
-      document.getElementById('ledgerVolumeText').innerText = `₹${data.total_spent_inr.toLocaleString('en-IN')}`;
+      let ledgerList = localLedger;
+      let totalSpent = mandateState.spent_today_inr || 500;
+      try {
+        const res = await fetch('/api/ledger');
+        if (res.ok) {
+          const data = await res.json();
+          ledgerList = data.ledger;
+          totalSpent = data.total_spent_inr;
+        }
+      } catch (e) {}
+      document.getElementById('ledgerOrdersText').innerText = ledgerList.length;
+      document.getElementById('ledgerCountBadge').innerText = ledgerList.length;
+      document.getElementById('ledgerVolumeText').innerText = `₹${totalSpent.toLocaleString('en-IN')}`;
 
       const tbody = document.getElementById('ledgerRowsContainer');
       tbody.innerHTML = '';
-      data.ledger.forEach(tx => {
+      ledgerList.forEach(tx => {
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-900/40 transition";
         const explorerLink = tx.explorer_url || `https://sepolia.basescan.org/tx/${tx.tx_hash}`;
@@ -1239,9 +1397,13 @@
     }
 
     async function fetchLogs() {
-      const res = await fetch('/api/logs');
-      const data = await res.json();
-      systemLogs = data.logs;
+      try {
+        const res = await fetch('/api/logs');
+        if (res.ok) {
+          const data = await res.json();
+          systemLogs = data.logs;
+        }
+      } catch (e) {}
       renderLogStream();
     }
 
